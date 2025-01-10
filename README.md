@@ -1,4 +1,4 @@
-# PLM - Plex Least Used Media 🎬
+# PLM - Plex Library Manager 🎬
 
 <div align="center">
 
@@ -8,108 +8,96 @@
 ![TailwindCSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/MongoDB-%234ea94b.svg?style=for-the-badge&logo=mongodb&logoColor=white)
 
-[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL%203.0-blue.svg?style=for-the-badge)](https://www.gnu.org/licenses/agpl-3.0)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
 [![Version](https://img.shields.io/badge/version-0.1.0-green.svg?style=for-the-badge)](https://github.com/yourusername/plm/releases)
 
 </div>
 
 <p align="center">
-  <strong>🔍 Find and manage your least used media in Plex</strong>
+  <strong>🚀 A powerful media library management tool for Plex</strong>
 </p>
 
 <p align="center">
   <img src="docs/screenshot.png" alt="PLM Screenshot" width="800">
 </p>
 
+<p align="center">
+  Optimize storage, identify unused content, and manage multiple servers efficiently
+</p>
+
+## 📖 Project Overview
+
+PLM was born from the challenges faced by Plex server administrators managing large media libraries across multiple servers. As media collections grow, so does the complexity of managing storage, tracking usage patterns, and ensuring optimal organization of content.
+
+### Vision
+Our vision is to create the most comprehensive and user-friendly tool for Plex server administrators, enabling them to make data-driven decisions about their media libraries while maximizing storage efficiency and content organization.
+
+### Goals
+- Provide deep insights into media usage patterns across multiple Plex servers
+- Automate the identification and management of duplicate content
+- Optimize storage usage through intelligent archiving recommendations
+- Streamline the process of maintaining healthy, well-organized media libraries
+- Create a unified interface for managing multiple Plex servers
+
+PLM achieves these goals through a modern, intuitive interface built with cutting-edge web technologies. By leveraging the power of SvelteKit, MongoDB, and real-time analytics, PLM provides server administrators with the tools they need to maintain their media libraries effectively.
+
 ## ✨ Features
 
-- 📊 View detailed statistics about your Plex libraries
-- 🔍 Find media that hasn't been watched in a long time
-- 📦 Calculate potential space savings
-- 🗑️ Archive unused media for later review
-- 🎯 Smart filtering and sorting options
-- 📱 Responsive design for all devices
+- 🌐 **Multi-Server Support**: Manage multiple Plex servers from a single dashboard
+- 📊 **Usage Analytics**: Track viewing patterns and identify unused content
+- 💾 **Storage Optimization**: Find and archive media content based on customizable criteria
+- 🔄 **Media Deduplication**: Identify duplicate content across libraries and servers
+- 🔒 **Secure Authentication**: JWT-based authentication with MongoDB user management
+- 🎨 **Modern UI**: Beautiful, responsive interface built with SvelteKit and Tailwind CSS
+
+## 🎯 System Overview
+
+PLM is designed to help Plex server administrators manage their media libraries more effectively:
+
+- 📈 **Library Analysis**: Get detailed insights into your media libraries, including usage patterns, storage consumption, and content age
+- 🗄️ **Smart Archiving**: Identify and archive content based on customizable criteria like last viewed date, size, and quality
+- 🔗 **Cross-Server Management**: Manage multiple Plex servers from a single interface with unified analytics
+- ⚡ **Automated Maintenance**: Schedule regular scans and maintenance tasks to keep your libraries optimized
+- 🔐 **Secure Access**: Role-based access control with secure authentication and API endpoints
+
+### 🔍 Deduplication System
+
+PLM uses a sophisticated approach to identify duplicate media content:
+
+- 🎯 **Fingerprint Generation**: Creates unique fingerprints based on file properties
+- 🔄 **Cross-Library Scanning**: Identifies duplicates across different libraries and servers
+- ⭐ **Confidence Scoring**: Provides match confidence levels to help make informed decisions
+- 🤖 **Automated Detection**: Runs in the background when new content is added
 
 ## 🚀 Quick Start
 
-1. Clone the repository
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/plm.git
+   ```
 
-```bash
-git clone https://github.com/yourusername/plm.git
-cd plm
-```
+2. Install dependencies:
+   ```bash
+   pnpm install
+   ```
 
-2. Install dependencies
+3. Create a `.env` file based on `.env.example`:
+   ```bash
+   cp .env.example .env
+   ```
 
-```bash
-pnpm install
-```
+4. Configure your environment variables:
+   ```env
+   MONGODB_URI=your_mongodb_uri
+   JWT_SECRET=your_jwt_secret
+   ```
 
-3. Copy the example environment file
+5. Start the development server:
+   ```bash
+   pnpm dev
+   ```
 
-```bash
-cp .env.example .env
-```
-
-4. Configure your environment variables (see [Configuration](#-configuration))
-
-5. Start the development server
-
-```bash
-pnpm dev
-```
-
-## ⚙️ Configuration
-
-Copy `.env.example` to `.env` and configure the following variables:
-
-```env
-# MongoDB Connection
-MONGODB_URI=mongodb://localhost:27017/plm
-
-# JWT Configuration
-JWT_SECRET=your_jwt_secret_here
-
-# Plex Configuration
-PLEX_URL=http://localhost:32400
-PLEX_TOKEN=your_plex_token
-```
-
-### 🔑 Getting Your Plex Token
-
-1. Sign in to Plex Web App (app.plex.tv)
-2. Open any media item that has a "Get Info" button
-3. Click the "Get Info" button (ⓘ)
-4. Click the "View XML" button
-5. In the new window's URL, find `X-Plex-Token=`
-6. Copy the token that appears after `X-Plex-Token=`
-
-Alternatively, you can get your token programmatically:
-
-1. Visit [plex.tv/sign-in](https://plex.tv/sign-in)
-2. Sign in with your Plex account
-3. Run this in the browser console:
-
-```javascript
-var clientId = 'PLM';
-fetch('https://plex.tv/api/v2/users/signin', {
-  method: 'POST',
-  headers: {
-    'X-Plex-Client-Identifier': clientId,
-    'X-Plex-Product': 'PLM',
-    'X-Plex-Version': '1.0.0',
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    login: 'YOUR_PLEX_EMAIL',
-    password: 'YOUR_PLEX_PASSWORD',
-  }),
-})
-  .then((r) => r.json())
-  .then((d) => console.log('Your token:', d.authToken));
-```
-
-## 🛠️ Development
+## 📚 Development
 
 - `pnpm dev` - Start development server
 - `pnpm build` - Build for production
@@ -118,13 +106,20 @@ fetch('https://plex.tv/api/v2/users/signin', {
 - `pnpm format` - Format code
 - `pnpm check` - Type check
 
-## 📝 License
+## 📖 Documentation
 
-This project is licensed under the AGPL-3.0 License - see the [LICENSE](LICENSE) file for details.
+- [Frontend Documentation](docs/frontend.md)
+- [Backend Documentation](docs/backend.md)
+- [Database Schema](docs/database-schema.md)
+- [API Documentation](docs/api.md)
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 

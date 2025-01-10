@@ -53,6 +53,47 @@
 }
 ```
 
+### MediaFingerprints Collection
+
+```json
+{
+  "_id": "ObjectId",
+  "serverId": "ObjectId",
+  "libraryId": "string",
+  "mediaId": "string",
+  "primary": {
+    "size": "number",
+    "duration": "number"
+  },
+  "secondary": {
+    "videoCodec": "string",
+    "resolution": "string",
+    "audioBitrate": "number",
+    "audioChannels": "number",
+    "container": "string"
+  },
+  "hash": "string",
+  "createdAt": "Date",
+  "updatedAt": "Date"
+}
+```
+
+### DuplicateMatches Collection
+
+```json
+{
+  "_id": "ObjectId",
+  "sourceFingerprint": "ObjectId",
+  "matchedFingerprint": "ObjectId",
+  "confidence": "number",
+  "status": "enum('pending', 'confirmed', 'rejected')",
+  "createdAt": "Date",
+  "updatedAt": "Date",
+  "reviewedAt": "Date",
+  "reviewedBy": "ObjectId"
+}
+```
+
 ## External API Data Structures
 
 ### Plex API
@@ -75,6 +116,8 @@ The application uses these Tautulli API endpoints for enhanced statistics:
 
 1. Users -> Settings (1:1)
 2. MediaCache -> Settings (N:1)
+3. MediaFingerprints -> PlexServers (N:1)
+4. DuplicateMatches -> MediaFingerprints (N:2)
 
 ## Indexes
 
@@ -88,3 +131,17 @@ The application uses these Tautulli API endpoints for enhanced statistics:
   - `libraryId`: Index
   - `lastUpdated`: Index
   - `mediaInfo.lastViewedAt`: Index
+
+- MediaFingerprints Collection:
+  - `hash`: Index
+  - `serverId`: Index
+  - `libraryId`: Index
+  - `primary.size`: Index
+  - `primary.duration`: Index
+
+- DuplicateMatches Collection:
+  - `sourceFingerprint`: Index
+  - `matchedFingerprint`: Index
+  - `confidence`: Index
+  - `status`: Index
+  - `createdAt`: Index

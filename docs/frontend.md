@@ -131,3 +131,30 @@ colors: {
 - Debounced search inputs
 - Cached API responses
 - Skeleton loading states
+
+## Features
+
+### Media Deduplication
+The system identifies potential duplicate media files across libraries using a composite fingerprint approach:
+
+- **Primary Matching**
+  - File size (exact match)
+  - Duration (within 1-second tolerance)
+  
+- **Secondary Verification**
+  - Video properties (codec, resolution, bitrate)
+  - Audio properties (codec, channels, bitrate)
+  - Container format
+  
+- **Confidence Scoring**
+  - High (95%+): All properties match
+  - Medium (80%+): Size/duration match, most properties match
+  - Low (60%+): Size/duration match, some properties differ
+
+### Implementation Details
+The deduplication process runs as a background task when:
+1. New media is added to a library
+2. User manually triggers a scan
+3. Scheduled scans (configurable)
+
+Results are stored in MongoDB for quick access and historical tracking.
