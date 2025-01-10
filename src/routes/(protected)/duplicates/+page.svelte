@@ -3,12 +3,38 @@
   import type { DuplicateMatchWithDetails } from '$lib/types/fingerprint';
 
   let duplicates: DuplicateMatchWithDetails[] = [];
+  let filteredDuplicates: DuplicateMatchWithDetails[] = [];
   let isLoading = false;
   let error = '';
+  let statusFilter: 'all' | 'pending' | 'confirmed' | 'rejected' = 'all';
+  let sortBy: 'confidence' | 'size' | 'title' = 'confidence';
+  let sortOrder: 'asc' | 'desc' = 'desc';
+  let selectedMatches = new Set<string>();
+
+  $: {
+    // Filter duplicates
+    filteredDuplicates = duplicates.filter(match => 
+      statusFilter === 'all' || match.status === statusFilter
+    );
+
+    // Sort duplicates
+    filteredDuplicates.sort((a, b) => {
+      let comparison = 0;
+      if (sortBy === 'confidence') {
+        comparison = b.confidence - a.confidence;
+      } else if (sortBy === 'size') {
+        comparison = b.sourceMedia.size - a.sourceMedia.size;
+      } else if (sortBy === 'title') {
+        comparison = a.sourceMedia.title.localeCompare(b.sourceMedia.title);
+      }
+      return sortOrder === 'desc' ? comparison : -comparison;
+    });
+  }
 
   async function loadDuplicates() {
     isLoading = true;
     error = '';
+    selectedMatches.clear();
 
     try {
       const response = await fetch('/api/duplicates');
@@ -42,6 +68,34 @@
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to update duplicate status';
     }
+  }
+
+  async function handleBatchAction(action: 'confirm' | 'reject') {
+    try {
+      const promises = Array.from(selectedMatches).map(matchId =>
+        fetch(`/api/duplicates/${matchId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ status: action === 'confirm' ? 'confirmed' : 'rejected' })
+        })
+      );
+
+      await Promise.all(promises);
+      await loadDuplicates();
+    } catch (e) {
+      error = e instanceof Error ? e.message : 'Failed to update duplicate statuses';
+    }
+  }
+
+  function toggleSelectAll() {
+    if (selectedMatches.size === filteredDuplicates.length) {
+      selectedMatches.clear();
+    } else {
+      selectedMatches = new Set(filteredDuplicates.map(match => match.id));
+    }
+    selectedMatches = selectedMatches; // Trigger reactivity
   }
 
   onMount(loadDuplicates);
@@ -78,6 +132,56 @@
     </div>
   {/if}
 
+  {#if !isLoading}
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex flex-wrap items-center gap-4">
+        <select
+          class="rounded-lg bg-surface-700 px-3 py-2 text-surface-200"
+          bind:value={statusFilter}
+        >
+          <option value="all">All Status</option>
+          <option value="pending">Pending</option>
+          <option value="confirmed">Confirmed</option>
+          <option value="rejected">Rejected</option>
+        </select>
+
+        <select
+          class="rounded-lg bg-surface-700 px-3 py-2 text-surface-200"
+          bind:value={sortBy}
+        >
+          <option value="confidence">Sort by Confidence</option>
+          <option value="size">Sort by Size</option>
+          <option value="title">Sort by Title</option>
+        </select>
+
+        <button
+          class="rounded-lg bg-surface-700 px-3 py-2 text-surface-200"
+          on:click={() => (sortOrder = sortOrder === 'asc' ? 'desc' : 'asc')}
+        >
+          {sortOrder === 'asc' ? '↑' : '↓'}
+        </button>
+      </div>
+
+      {#if selectedMatches.size > 0}
+        <div class="flex items-center gap-4">
+          <span class="text-sm text-surface-400">{selectedMatches.size} selected</span>
+          <button
+            class="rounded bg-success-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-success-500"
+            on:click={() => handleBatchAction('confirm')}
+          >
+            Confirm Selected
+          </button>
+          <button
+            class="rounded bg-error-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-error-500"
+            on:click={() => handleBatchAction('reject')}
+          >
+            Reject Selected
+          </button>
+        </div>
+      {/if}
+    </div>
+  {/if}
+
   {#if isLoading}
     <div class="flex items-center justify-center py-12">
       <svg
@@ -94,7 +198,7 @@
         />
       </svg>
     </div>
-  {:else if duplicates.length === 0}
+  {:else if filteredDuplicates.length === 0}
     <div class="rounded-lg bg-surface-800 p-8 text-center">
       <svg
         class="mx-auto h-12 w-12 text-surface-400"
@@ -111,35 +215,80 @@
         />
       </svg>
       <h3 class="mt-2 text-sm font-medium text-surface-200">No duplicates found</h3>
-      <p class="mt-1 text-sm text-surface-400">All your media content appears to be unique.</p>
+      <p class="mt-1 text-sm text-surface-400">
+        {statusFilter === 'all'
+          ? 'All your media content appears to be unique.'
+          : `No ${statusFilter} duplicates found.`}
+      </p>
     </div>
   {:else}
     <div class="space-y-6">
-      {#each duplicates as match}
+      <div class="flex items-center justify-between pb-4">
+        <label class="flex items-center gap-2">
+          <input
+            type="checkbox"
+            class="rounded border-surface-600 bg-surface-700 text-primary-500"
+            checked={selectedMatches.size === filteredDuplicates.length}
+            on:change={toggleSelectAll}
+          />
+          <span class="text-sm text-surface-400">Select All</span>
+        </label>
+      </div>
+
+      {#each filteredDuplicates as match}
         <div class="overflow-hidden rounded-lg bg-surface-800 shadow">
           <div class="px-6 py-4">
-            <div class="flex items-center justify-between">
-              <div>
-                <div class="text-lg font-medium text-surface-200">
-                  Potential Duplicate ({match.confidence}% match)
+            <div class="flex items-center gap-4">
+              <input
+                type="checkbox"
+                class="rounded border-surface-600 bg-surface-700 text-primary-500"
+                checked={selectedMatches.has(match.id)}
+                on:change={() => {
+                  if (selectedMatches.has(match.id)) {
+                    selectedMatches.delete(match.id);
+                  } else {
+                    selectedMatches.add(match.id);
+                  }
+                  selectedMatches = selectedMatches; // Trigger reactivity
+                }}
+              />
+              <div class="flex-grow">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <div class="text-lg font-medium text-surface-200">
+                      Potential Duplicate ({match.confidence}% match)
+                    </div>
+                    <div class="mt-1 text-sm text-surface-400">
+                      Found in {match.sourceMedia.server} and {match.matchedMedia.server}
+                    </div>
+                  </div>
+                  {#if match.status === 'pending'}
+                    <div class="flex space-x-2">
+                      <button
+                        class="rounded bg-success-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-success-500"
+                        on:click={() => handleAction(match.id, 'confirm')}
+                      >
+                        Confirm
+                      </button>
+                      <button
+                        class="rounded bg-error-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-error-500"
+                        on:click={() => handleAction(match.id, 'reject')}
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  {:else}
+                    <span
+                      class="rounded-full px-2 py-1 text-xs font-medium"
+                      class:bg-success-900={match.status === 'confirmed'}
+                      class:text-success-500={match.status === 'confirmed'}
+                      class:bg-error-900={match.status === 'rejected'}
+                      class:text-error-500={match.status === 'rejected'}
+                    >
+                      {match.status}
+                    </span>
+                  {/if}
                 </div>
-                <div class="mt-1 text-sm text-surface-400">
-                  Found in {match.sourceMedia.server} and {match.matchedMedia.server}
-                </div>
-              </div>
-              <div class="flex space-x-2">
-                <button
-                  class="rounded bg-success-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-success-500"
-                  on:click={() => handleAction(match.id, 'confirm')}
-                >
-                  Confirm
-                </button>
-                <button
-                  class="rounded bg-error-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-error-500"
-                  on:click={() => handleAction(match.id, 'reject')}
-                >
-                  Reject
-                </button>
               </div>
             </div>
           </div>

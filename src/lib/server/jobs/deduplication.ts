@@ -66,7 +66,7 @@ async function scanAllServers(): Promise<void> {
 }
 
 // Start background job
-let scanInterval: NodeJS.Timer;
+let scanInterval: ReturnType<typeof setInterval>;
 
 export function startDedupeScan(): void {
   // Run initial scan
